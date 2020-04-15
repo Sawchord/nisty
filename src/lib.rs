@@ -613,7 +613,7 @@ impl Signature {
 
 /// Convenience function, calculates SHA256 hash digest of a slice of bytes.
 pub fn prehash(message: &[u8]) -> [u8; DIGEST_LENGTH] {
-    use sha2::digest::Digest;
+    //use sha2::digest::Digest;
     let mut hash = sha2::Sha256::new();
     hash.input(message);
     let data = hash.result();
@@ -771,13 +771,13 @@ impl From<&SecretKey> for PublicKey {
     }
 }
 
-#[repr(C)]
-struct ShaHashContext {
-    context: uecc::uECC_HashContext,
-    sha: sha2::Sha256,
-}
+//#[repr(C)]
+//struct ShaHashContext {
+//    context: uecc::uECC_HashContext,
+//    sha: sha2::Sha256,
+//}
 
-extern "C" fn uecc_init_hash(context: *const uecc::uECC_HashContext) {
+extern "C" fn uecc_init_hash(_context: *const uecc::uECC_HashContext) {
     //let sha2 = unsafe { &mut(*(context as *mut ShaHashContext)).sha } ;
     //use sha2::digest::Reset;
 
@@ -792,7 +792,7 @@ extern "C" fn uecc_init_hash(context: *const uecc::uECC_HashContext) {
 
 }
 
-extern "C" fn uecc_update_hash(context: *const uecc::uECC_HashContext, message: *const u8, message_size: u32) {
+extern "C" fn uecc_update_hash(_context: *const uecc::uECC_HashContext, message: *const u8, message_size: u32) {
     //let sha2 = unsafe { &mut(*(context as *mut ShaHashContext)).sha };
     //use sha2::digest::Input;
 
@@ -808,7 +808,7 @@ pub unsafe fn hash_calls() -> u32 {
     HASHES
 }
 
-extern "C" fn uecc_finish_hash(context: *const uecc::uECC_HashContext, hash_result: *mut u8) {
+extern "C" fn uecc_finish_hash(_context: *const uecc::uECC_HashContext, hash_result: *mut u8) {
     //let sha2 = unsafe { &mut(*(context as *mut ShaHashContext)).sha };
     //use sha2::digest::Digest;
 
