@@ -110,6 +110,9 @@ pub struct Error;
 /// This library's result type.
 pub type Result<T> = core::result::Result<T, Error>;
 
+use sha2::digest::Digest;
+static mut HASH: Option<sha2::Sha256> = None;
+
 /// Similar to [`core::convert::AsRef`](https://doc.rust-lang.org/core/convert/trait.AsRef.html).
 ///
 /// Advantage: we can implement it on arrays of more than 32 bytes
@@ -284,12 +287,12 @@ impl SecretKey {
             tmp: &mut tmp[0],// as *mut u8,
 		};
 
-        use sha2::digest::Digest;
-        #[allow(unused_variables)]
-        let sha_context = ShaHashContext {
-            context: hash_context,
-            sha: sha2::Sha256::new(),
-        };
+        //use sha2::digest::Digest;
+        //#[allow(unused_variables)]
+        //let sha_context = ShaHashContext {
+        //    context: hash_context,
+        //    sha: sha2::Sha256::new(),
+        //};
 
         // debug_assert!(unsafe { uecc::uECC_get_rng() }.is_none());
         unsafe { uecc::uECC_set_rng(None) };  // <-- shouldn't be set here anymore anyway
@@ -775,15 +778,26 @@ struct ShaHashContext {
 }
 
 extern "C" fn uecc_init_hash(context: *const uecc::uECC_HashContext) {
-    let sha2 = unsafe { &mut(*(context as *mut ShaHashContext)).sha } ;
-    use sha2::digest::Reset;
+    //let sha2 = unsafe { &mut(*(context as *mut ShaHashContext)).sha } ;
+    //use sha2::digest::Reset;
+
+    unsafe {
+        if HASH.is_none() {
+            HASH = Some(sha2::Sha256::new());
+        }
+    }
+    let sha2 = unsafe { HASH.as_mut().unwrap() };
     sha2.reset();
+
+
 }
 
 extern "C" fn uecc_update_hash(context: *const uecc::uECC_HashContext, message: *const u8, message_size: u32) {
-    let sha2 = unsafe { &mut(*(context as *mut ShaHashContext)).sha };
-    let buf = unsafe { core::slice::from_raw_parts(message, message_size as usize) } ;
-    use sha2::digest::Input;
+    //let sha2 = unsafe { &mut(*(context as *mut ShaHashContext)).sha };
+    //use sha2::digest::Input;
+
+    let sha2 = unsafe { HASH.as_mut().unwrap() };
+    let buf = unsafe{ core::slice::from_raw_parts(message, message_size as usize) };
     sha2.input(&buf);
 }
 
@@ -795,8 +809,10 @@ pub unsafe fn hash_calls() -> u32 {
 }
 
 extern "C" fn uecc_finish_hash(context: *const uecc::uECC_HashContext, hash_result: *mut u8) {
-    let sha2 = unsafe { &mut(*(context as *mut ShaHashContext)).sha };
-    use sha2::digest::Digest;
+    //let sha2 = unsafe { &mut(*(context as *mut ShaHashContext)).sha };
+    //use sha2::digest::Digest;
+
+    let sha2 = unsafe { HASH.as_mut().unwrap() };
     let data = sha2.result_reset();
     let result = unsafe { core::slice::from_raw_parts_mut(hash_result, DIGEST_LENGTH) } ;
     result.copy_from_slice(&data);
